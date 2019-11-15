@@ -1,0 +1,17 @@
+log
+.idea/
+*.log
+*~
+*#
+
+/node_modules/
+
+# build (prepare-site) artifacts
+/dist
+/build
+/_output
+
+
+
+# Default ignored files
+/workspace.xml
