@@ -4,15 +4,19 @@ import {
     apiRemoveImages,
     apiSetImage,
 } from '../api.js';
-import { random } from '../constants.js';
-import ButtonComponent from './button-component.js';
-import Component from './component.js';
-import GalleryCellComponent from './gallery-cell-component.js';
-import ImageComponent from './image-component.js';
+import {
+    PICSUM_URL,
+    random,
+} from '../constants.js';
+import ButtonComponent from './ButtonComponent.js';
+import BaseComponent from './BaseComponent.js';
+import GalleryCellComponent from './GalleryCellComponent.js';
+import ImageComponent from './ImageComponent.js';
+import InputComponent from './InputComponent.js';
 
-export default class GalleryComponent extends Component {
-    constructor(data) {
-        super(data);
+export default class GalleryComponent extends BaseComponent {
+    constructor(props) {
+        super(props);
 
         this.images = {};
         this.initTemplate();
@@ -21,24 +25,38 @@ export default class GalleryComponent extends Component {
 
     initTemplate = () => {
         this.template = document.createElement('div');
+        this.template.classList.add('gallery');
+
+        // define panel
         this.galleryPanel = document.createElement('div');
+        this.galleryPanel.classList.add('gallery__panel');
+
+        // define container
         this.galleryContainer = document.createElement('div');
-        this.generateButton = new ButtonComponent({
+        this.galleryContainer.classList.add('gallery__container');
+
+        // define input
+
+        this.input = new InputComponent({
+            id: 'imageAmountInput',
             target: this.galleryPanel,
+        });
+
+        // define buttons
+        this.generateButton = new ButtonComponent({
             id: 'generateButton',
+            target: this.galleryPanel,
             content: 'Generate images',
             onClickHandler: this.generateImages,
         });
         this.clearButton = new ButtonComponent({
-            target: this.galleryPanel,
             id: 'clearButton',
+            target: this.galleryPanel,
             content: 'Clear gallery',
             onClickHandler: this.removeImages,
         });
 
-        this.template.setAttribute('class', 'gallery');
-        this.galleryPanel.setAttribute('class', 'gallery__panel');
-        this.galleryContainer.setAttribute('class', 'gallery__container');
+        // add elements to gallery
         this.galleryPanel.appendChild(this.generateButton.template);
         this.galleryPanel.appendChild(this.clearButton.template);
         this.template.appendChild(this.galleryPanel);
@@ -50,16 +68,16 @@ export default class GalleryComponent extends Component {
         apiGetImages()
             .then(response => {
                 if (response) {
+                    console.log(response);
                     for (let [id, image] of Object.entries(response)) {
                         if (!this.images[id]) {
                             this.images[id] = new ImageComponent({
-                                target: this.template,
                                 id: id,
+                                target: this.template,
                                 content: image,
                             });
                         }
                     }
-
                     this.fillGallery();
                 }
             });
@@ -70,6 +88,7 @@ export default class GalleryComponent extends Component {
             .forEach(imageComponent => {
                 if (!document.getElementById(imageComponent.id)) {
                     new GalleryCellComponent({
+                        id: imageComponent.id,
                         target: this.galleryContainer,
                         content: imageComponent,
                         onRemove: this.removeImageById,
@@ -79,14 +98,26 @@ export default class GalleryComponent extends Component {
     };
 
     generateImages = () => {
-        for (let i = 0; i < 5; i++) {
-            apiSetImage(random(1, 1000))
-                .then(response => {
-                    console.log('setImage');
-                    console.log(response);
+        for (let i = 0; i < (this.input.template.value || 5); i++) {
+            let id = random(1, 1000);
+            let imageData = {
+                id,
+                src: `${PICSUM_URL}id/${ id }/200/200`,
+            };
+
+            if (!this.images[id]) {
+                this.images[id] = new ImageComponent({
+                    id: id,
+                    target: this.template,
+                    content: imageData,
                 });
+                apiSetImage(imageData)
+                    .then(response => {
+                        console.log('setImage', response);
+                    });
+            }
         }
-        this.getImages();
+        this.fillGallery();
     };
 
     removeImageById = (imageId) => {
@@ -112,8 +143,4 @@ export default class GalleryComponent extends Component {
                 });
         }
     };
-
-    initPagination = () => {
-
-    }
 };
